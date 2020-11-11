@@ -113,6 +113,7 @@ WARNING
         post_bundler
         create_database_yml
         install_binaries
+        run_db_schema_load
         run_assets_precompile_rake_task
       end
       config_detect
@@ -1209,6 +1210,21 @@ params = CGI.parse(uri.query || "")
 
   def yarn_not_preinstalled?
     !yarn_preinstalled?
+  end
+
+  def run_db_schema_load
+    instrument 'ruby.run_db_schema_load' do
+
+      db_schema_load = rake.task("db:schema:load")
+
+      topic "Loading db schema"
+      db_schema_load.invoke(env: rake_env)
+      if db_schema_load.success?
+        puts "Loading db schema completed (#{"%.2f" % db_schema_load.time}s)"
+      else
+        precompile_fail(db_schema_load.output)
+      end
+    end
   end
 
   def run_assets_precompile_rake_task
